@@ -1,0 +1,7 @@
+name: MinigameService
+main: net.craftgalaxy.minigameservice.bukkit.MinigameService
+version: ${project.version}
+api-version: 1.16
+author: Frank
+depend:
+  - Vault
