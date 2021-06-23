@@ -1,0 +1,8 @@
+name: MinigameCore
+main: net.craftgalaxy.minigamecore.MinigameCore
+version: ${project.version}
+api-version: 1.16
+author: Frank
+depend:
+  - MinigameService
+  - Manhunt

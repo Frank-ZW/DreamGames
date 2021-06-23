@@ -1,0 +1,12 @@
+initial-startup: true
+
+socket-settings:
+  proxy-side-server-name: mini1A
+  host-name: "127.0.0.1"
+  port-number: 6710
+
+lobby-location:
+  world-name: world
+  X: 0
+  Y: -1
+  Z: 0
