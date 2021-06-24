@@ -183,22 +183,22 @@ public abstract class AbstractMinigame {
         }
     }
 
-    public String getGameDisplayName(@NotNull OfflinePlayer player) {
-        return ChatColor.GREEN + player.getName();
+    public Component getGameDisplayName(@NotNull OfflinePlayer player) {
+        return Component.text(ChatColor.GREEN + player.getName());
     }
 
     /**
      * @param player        The player typing in chat.
      * @return              A string consisting of the player's prefix if one exists and their in-game display name.
      */
-    public String getPlayerChatHandle(@NotNull Player player) {
+    public Component getPlayerChatHandle(@NotNull Player player) {
         String prefix = null;
         Chat chat = this.plugin.getChat();
         if (chat != null) {
             prefix = chat.getPlayerPrefix(player);
         }
 
-        return (prefix == null ? "" : ChatColor.translateAlternateColorCodes('&', prefix) + ChatColor.RESET + " ") + (this.isSpectator(player.getUniqueId()) ? ChatColor.BLUE + player.getName() : this.getGameDisplayName(player));
+        return Component.text((prefix == null ? "" : ChatColor.translateAlternateColorCodes('&', prefix) + ChatColor.RESET + " ")).append(this.isSpectator(player.getUniqueId()) ? Component.text(ChatColor.BLUE + player.getName()) : this.getGameDisplayName(player));
     }
 
     public boolean isSpectatorCompass(@Nullable ItemStack item) {
@@ -230,9 +230,7 @@ public abstract class AbstractMinigame {
         if (urgently) {
             this.deleteWorlds();
         } else {
-            Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
-                this.deleteWorlds();
-            }, (long) (20 * Math.ceil(1.5 * this.players.size())));
+            Bukkit.getScheduler().runTaskLater(this.plugin, (@NotNull Runnable) this::deleteWorlds, (long) (20 * Math.ceil(1.5 * this.players.size())));
         }
     }
 
@@ -255,7 +253,7 @@ public abstract class AbstractMinigame {
                         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
                         SkullMeta meta = (SkullMeta) head.getItemMeta();
                         if (meta != null) {
-                            meta.displayName(Component.text(this.getGameDisplayName(offline)));
+                            meta.displayName(this.getGameDisplayName(player));
                             meta.setOwningPlayer(offline);
                             head.setItemMeta(meta);
                         }
