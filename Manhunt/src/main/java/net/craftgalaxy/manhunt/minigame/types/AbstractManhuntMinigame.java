@@ -84,8 +84,8 @@ public abstract class AbstractManhuntMinigame extends AbstractSurvivalMinigame {
     }
 
     @Override
-    public String getGameDisplayName(@NotNull OfflinePlayer player) {
-        return (this.isSpeedrunner(player.getUniqueId()) ? ChatColor.GREEN : ChatColor.RED) + player.getName();
+    public Component getGameDisplayName(@NotNull OfflinePlayer player) {
+        return Component.text((this.isSpeedrunner(player.getUniqueId()) ? ChatColor.GREEN : ChatColor.RED) + player.getName());
     }
 
     /**
