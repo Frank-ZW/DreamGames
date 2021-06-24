@@ -31,7 +31,7 @@ public class PlayerListeners implements Listener {
         this.manager.handleDisconnect(e.getPlayer());
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onAsyncChat(AsyncChatEvent e) {
         this.manager.handleEvent(e, e.getPlayer().getUniqueId());
     }

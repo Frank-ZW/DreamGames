@@ -1,10 +1,10 @@
 package net.craftgalaxy.minigamecore.socket.manager;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.papermc.paper.chat.ChatRenderer;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.craftgalaxy.manhunt.minigame.impl.VanillaManhuntMinigame;
 import net.craftgalaxy.minigamecore.MinigameCore;
+import net.craftgalaxy.minigameservice.bukkit.chat.GameChatRenderer;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameEndEvent;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameEvent;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameStartEvent;
@@ -213,7 +213,7 @@ public class CoreManager {
                 if (this.minigame.isSpectator(player.getUniqueId())) {
                     this.minigame.removePlayer(player);
                 } else {
-                    Bukkit.broadcast(Component.text(this.minigame.getGameDisplayName(player) + ChatColor.GRAY + " disconnected."));
+                    Bukkit.broadcast(this.minigame.getGameDisplayName(player).append(Component.text(ChatColor.GRAY + " disconnected.")));
                     this.disconnections.put(player.getUniqueId(), Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
                         this.disconnections.remove(player.getUniqueId());
                         try {
@@ -279,7 +279,7 @@ public class CoreManager {
                 this.disconnections.computeIfPresent(player.getUniqueId(), (uniqueId, task) -> {
                     task.cancel();
                     if (!this.minigame.isSpectator(uniqueId)) {
-                        Bukkit.broadcast(Component.text(this.minigame.getGameDisplayName(player) + ChatColor.GRAY + " reconnected."));
+                        Bukkit.broadcast(this.minigame.getGameDisplayName(player).append(Component.text(ChatColor.GRAY + " reconnected.")));
                     }
 
                     return null;
@@ -325,8 +325,6 @@ public class CoreManager {
 
             if (event instanceof AsyncChatEvent) {
                 AsyncChatEvent e = (AsyncChatEvent) event;
-                ChatRenderer renderer = e.renderer();
-                Player player = e.getPlayer();
                 Iterator<Audience> iterator = e.viewers().iterator();
                 while (iterator.hasNext()) {
                     Audience audience = iterator.next();
@@ -336,25 +334,12 @@ public class CoreManager {
                     }
 
                     Player recipient = (Player) audience;
-                    renderer.render(player, Component.text(this.minigame.getPlayerChatHandle(player)), Component.text(ChatColor.DARK_GRAY.toString() + ChatColor.BOLD + "» " + ChatColor.RESET + ChatColor.WHITE).append(e.message()), recipient);
-                //                TextComponent message = Component.text(this.minigame.getStatus().isInProgress() || this.minigame.getStatus().isFinished() ? (this.minigame.isSpectator(player.getUniqueId()) ? StringUtil.SPECTATOR_PREFIX : StringUtil.GAME_PREFIX) : StringUtil.LOBBY_PREFIX).content(ChatColor.RESET + this.minigame.getPlayerChatHandle(player) + ChatColor.DARK_GRAY + ChatColor.BOLD + " » " + ChatColor.RESET + ChatColor.WHITE + e.originalMessage());
-//                e.message(message);
-//                Iterator<Audience> iterator = e.viewers().iterator();
-//                while (true) {
-//                    Player recipient;
-//                    do {
-//                        if (!iterator.hasNext()) {
-//                            return;
-//                        }
-//
-//                        Audience audience = iterator.next();
-//                        if (audience instanceof Player) {
-//                            recipient = (Player) audience;
-//                        } else {
-//                            recipient = null;
-//                        }
-//                    } while (recipient != null && (this.minigame.isPlayer(uniqueId) ? (this.minigame.isSpectator(uniqueId) ? this.minigame.isSpectator(recipient.getUniqueId()) : this.minigame.isPlayer(recipient.getUniqueId())) : !this.minigame.isPlayer(recipient.getUniqueId())));
-//                    iterator.remove();
+                    if (this.minigame.isPlayer(uniqueId) ? (this.minigame.isSpectator(uniqueId) ? !this.minigame.isSpectator(recipient.getUniqueId()) : !this.minigame.isPlayer(recipient.getUniqueId())) : this.minigame.isPlayer(recipient.getUniqueId())) {
+                        iterator.remove();
+                        continue;
+                    }
+
+                    e.renderer(new GameChatRenderer(this.minigame));
                 }
             } else if (this.minigame.isSpectator(uniqueId)) {
                 this.minigame.handleSpectatorEvent(event);
