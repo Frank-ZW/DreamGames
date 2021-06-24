@@ -274,14 +274,13 @@ public class ServerManager {
     }
 
     public void addInactiveServer(@NotNull ServerData serverData) {
-        if (this.actives.remove(serverData)) {
-            this.plugin.getLogger().info(ChatColor.GREEN + "Re-added " + serverData.getServerName() + " to the inactive server queued.");
-        } else {
+        if (!this.actives.remove(serverData)) {
             this.staging.remove(serverData);
             this.clearFromQueued(serverData);
         }
 
         this.gameKeys.inverse().remove(serverData);
         this.inactives.add(serverData.reset());
+        this.plugin.getLogger().info(ChatColor.GREEN + "Re-added " + serverData.getServerName() + " to the inactive server queue.");
     }
 }
