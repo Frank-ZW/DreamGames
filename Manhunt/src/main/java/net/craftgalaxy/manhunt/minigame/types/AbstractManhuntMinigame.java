@@ -1,10 +1,8 @@
 package net.craftgalaxy.manhunt.minigame.types;
 
 import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractSurvivalMinigame;
-import net.craftgalaxy.minigameservice.bukkit.util.ItemUtil;
-import net.craftgalaxy.minigameservice.bukkit.util.ColorUtil;
+import net.craftgalaxy.minigameservice.bukkit.util.minecraft.ItemUtil;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
 import net.minecraft.server.v1_16_R3.NBTTagCompound;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -45,7 +43,7 @@ public abstract class AbstractManhuntMinigame extends AbstractSurvivalMinigame {
     public void updatePlayerTracker(@NotNull Player hunter, @NotNull ItemStack compass) {
         Player player = this.getSpeedrunnerPlayer();
         if (player == null) {
-            hunter.sendActionBar(Component.text("There are no players to track!", TextColor.color(ColorUtil.BUKKIT_RED_CODE)));
+            hunter.sendActionBar(Component.text(ChatColor.RED + "There are no players to track!"));
             return;
         }
 
@@ -54,9 +52,9 @@ public abstract class AbstractManhuntMinigame extends AbstractSurvivalMinigame {
             compassMeta.setLodestone(player.getLocation());
             compassMeta.setLodestoneTracked(false);
             compass.setItemMeta(compassMeta);
-            hunter.sendActionBar(Component.text("Currently tracking " + player.getName() + "'s latest location.", TextColor.color(ColorUtil.BUKKIT_GREEN_CODE)));
+            hunter.sendActionBar(Component.text( ChatColor.GREEN + "Currently tracking " + player.getName() + "'s latest location."));
         } else {
-            hunter.sendActionBar(Component.text("There are no players to track!", TextColor.color(ColorUtil.BUKKIT_RED_CODE)));
+            hunter.sendActionBar(Component.text(ChatColor.RED + "There are no players to track!"));
         }
     }
 
@@ -121,7 +119,7 @@ public abstract class AbstractManhuntMinigame extends AbstractSurvivalMinigame {
     public void startTeleport() {
         Player player = this.getSpeedrunnerPlayer();
         if (player == null) {
-            Bukkit.broadcast(Component.text("An error occurred while selecting the speedrunner. Contact an administrator if this occurs.", TextColor.color(ColorUtil.BUKKIT_RED_CODE)));
+            Bukkit.broadcast(Component.text( ChatColor.RED + "An error occurred while selecting the speedrunner. Contact an administrator if this occurs."));
             this.endMinigame(true);
             return;
         }
@@ -173,9 +171,9 @@ public abstract class AbstractManhuntMinigame extends AbstractSurvivalMinigame {
         }
 
         if (isSpeedrunnerWinner) {
-            Bukkit.broadcast(Component.text("The speedrunner has won the Manhunt", TextColor.color(ColorUtil.BUKKIT_GREEN_CODE)));
+            Bukkit.broadcast(Component.text(ChatColor.GREEN + "The speedrunner has won the Manhunt"));
         } else {
-            Bukkit.broadcast(Component.text("The hunter" + (this.hunters.size() == 1 ? " has" : "s have") + " won the Manhunt.", TextColor.color(ColorUtil.BUKKIT_GREEN_CODE)));
+            Bukkit.broadcast(Component.text(ChatColor.GREEN + "The hunter" + (this.hunters.size() == 1 ? " has" : "s have") + " won the Manhunt."));
         }
 
         super.endMinigame(urgently);

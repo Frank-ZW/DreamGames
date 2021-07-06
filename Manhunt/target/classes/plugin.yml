@@ -1,0 +1,7 @@
+name: Manhunt
+version: 1.0.0
+author: Frank
+main: net.craftgalaxy.manhunt.Manhunt
+api-version: 1.16
+depend:
+  - MinigameService

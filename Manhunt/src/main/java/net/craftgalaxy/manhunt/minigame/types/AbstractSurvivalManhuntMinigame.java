@@ -1,8 +1,7 @@
 package net.craftgalaxy.manhunt.minigame.types;
 
-import net.craftgalaxy.minigameservice.bukkit.util.ItemUtil;
+import net.craftgalaxy.minigameservice.bukkit.util.minecraft.ItemUtil;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -51,14 +50,6 @@ public abstract class AbstractSurvivalManhuntMinigame extends AbstractManhuntMin
                     }
                 }
             } else if (event instanceof PlayerRespawnEvent) {
-                PlayerRespawnEvent e = (PlayerRespawnEvent) event;
-                if (this.getOverworld() == null) {
-                    Bukkit.broadcast(Component.text(ChatColor.RED + "The Manhunt overworld failed to generate properly... Contact an administrator if this occurs."));
-                    this.endMinigame(true);
-                    return;
-                }
-
-                e.setRespawnLocation(player.getBedSpawnLocation() == null ? this.getOverworld().getSpawnLocation() : player.getBedSpawnLocation());
                 if (this.isHunter(player.getUniqueId())) {
                     player.getInventory().setItem(8, ItemUtil.createPlayerTracker(ItemUtil.MANHUNT_PLAYER_TRACKER));
                 }
