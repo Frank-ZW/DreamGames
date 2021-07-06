@@ -51,7 +51,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.2.0</version>
                 <configuration>
-                    <outputDirectory>C:\Users\frank\Documents\JetBrains Workspace\IntelliJ IDEA Workspace\DreamGames\output</outputDirectory>
+                    <outputDirectory>C:\Users\frank\Documents\JetBrains Workspace\IntelliJ Workspace\DreamGames\output</outputDirectory>
                 </configuration>
             </plugin>
         </plugins>
