@@ -38,6 +38,10 @@ public class PlayerData {
         this.playerStatus = playerStatus;
     }
 
+    public boolean isInactive() {
+        return this.playerStatus == PlayerStatus.INACTIVE;
+    }
+
     public boolean isPlaying() {
         return this.playerStatus == PlayerStatus.PLAYING;
     }

@@ -12,6 +12,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -92,14 +93,14 @@ public class ServerData implements Runnable {
         this.players = players;
     }
 
-    public void sendQueuedPlayer(@NotNull ProxiedPlayer player) {
+    public void sendQueuedPlayer(@NotNull ProxiedPlayer player, byte type, @Nullable UUID target) {
         if (this.server == null) {
             player.sendMessage(new TextComponent(ChatColor.RED + "Failed to send you to the specified server. Contact an administrator if this occurs."));
             return;
         }
 
         try {
-            this.sendPacket(new PacketPlayOutQueuePlayer(player.getUniqueId()));
+            this.sendPacket(new PacketPlayOutQueuePlayer(player.getUniqueId(), type, target));
             player.connect(this.server);
         } catch (IOException e) {
             player.sendMessage(new TextComponent(ChatColor.RED + "An error occurred while connecting you to " + this.server.getName() + "."));
@@ -154,12 +155,17 @@ public class ServerData implements Runnable {
                         continue;
                     }
 
-                    ServerInfo server = ServerManager.getInstance().getRandomLobby().getServer();
+                    ServerData serverData = ServerManager.getInstance().getRandomLobby();
+                    if (serverData == null) {
+                        this.plugin.getLogger().warning("Failed to find a lobby server for players to connect to.");
+                        continue;
+                    }
+
                     for (UUID uniqueId : packet.getPlayers()) {
                         PlayerData playerData = PlayerManager.getInstance().getPlayerData(uniqueId);
                         if (playerData != null) {
                             playerData.setPlayerStatus(PlayerData.PlayerStatus.INACTIVE);
-                            playerData.getPlayer().connect(server);
+                            playerData.getPlayer().connect(serverData.getServer());
                             playerData.getPlayer().sendMessage(new TextComponent(ChatColor.GREEN + "The server you were on has unexpectedly shutdown. You have been connected to the lobby."));
                         }
                     }
@@ -169,12 +175,17 @@ public class ServerData implements Runnable {
                     PacketPlayInPlayerAction packet = (PacketPlayInPlayerAction) object;
                     switch (packet.getAction()) {
                         case 0:
-                            ServerInfo server = ServerManager.getInstance().getRandomLobby().getServer();
+                            ServerData serverData = ServerManager.getInstance().getRandomLobby();
+                            if (serverData == null) {
+                                this.plugin.getLogger().warning("Failed to find a lobby server for players to connect to.");
+                                continue;
+                            }
+
                             for (UUID uniqueId : packet.getPlayers()) {
                                 PlayerData playerData = PlayerManager.getInstance().getPlayerData(uniqueId);
                                 if (playerData != null) {
                                     playerData.setPlayerStatus(PlayerData.PlayerStatus.INACTIVE);
-                                    playerData.getPlayer().connect(server);
+                                    playerData.getPlayer().connect(serverData.getServer());
                                 }
                             }
 
@@ -208,12 +219,17 @@ public class ServerData implements Runnable {
                     }
                 } else if (object instanceof PacketPlayInEndMinigame) {
                     PacketPlayInEndMinigame packet = (PacketPlayInEndMinigame) object;
-                    ServerInfo server = ServerManager.getInstance().getRandomLobby().getServer();
+                    ServerData serverData = ServerManager.getInstance().getRandomLobby();
+                    if (serverData == null) {
+                        this.plugin.getLogger().warning("Failed to find a lobby server to for players to connect to.");
+                        continue;
+                    }
+
                     for (UUID uniqueId : packet.getPlayers()) {
                         PlayerData playerData = PlayerManager.getInstance().getPlayerData(uniqueId);
                         if (playerData != null) {
                             playerData.setPlayerStatus(PlayerData.PlayerStatus.INACTIVE);
-                            playerData.getPlayer().connect(server);
+                            playerData.getPlayer().connect(serverData.getServer());
                         }
                     }
 
@@ -244,6 +260,7 @@ public class ServerData implements Runnable {
 
     public enum Minigames {
         MANHUNT("Manhunt"),
+        DEATHSWAP("Death Swap"),
         INACTIVE("Unknown");
 
         private final String displayName;

@@ -1,5 +1,6 @@
 package net.craftgalaxy.bungeecore;
 
+import net.craftgalaxy.bungeecore.command.ForceEndCommand;
 import net.craftgalaxy.bungeecore.command.PlayCommand;
 import net.craftgalaxy.bungeecore.config.ConfigurationManager;
 import net.craftgalaxy.bungeecore.listener.PlayerListeners;
@@ -21,6 +22,7 @@ public final class BungeeCore extends Plugin {
         PlayerManager.enable(this);
         this.getProxy().getPluginManager().registerListener(this, new PlayerListeners());
         this.getProxy().getPluginManager().registerCommand(this, new PlayCommand());
+        this.getProxy().getPluginManager().registerCommand(this, new ForceEndCommand());
     }
 
     @Override

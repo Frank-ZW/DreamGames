@@ -1,0 +1,14 @@
+latest-game-key: 0
+
+socket-settings:
+  port: 6710
+
+server-settings:
+  lobbies:
+    hub:
+      - main
+    minigame:
+      - main
+  minigames:
+    - mini1A
+    - mini1B

@@ -67,6 +67,11 @@ public class PlayerManager {
     }
 
     @Nullable
+    public PlayerData getPlayerData(@Nullable ProxiedPlayer player) {
+        return player == null ? null : this.getPlayerData(player.getUniqueId());
+    }
+
+    @Nullable
     public PlayerData getPlayerData(UUID uniqueId) {
         return this.players.get(uniqueId);
     }

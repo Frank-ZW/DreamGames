@@ -8,6 +8,7 @@ import net.craftgalaxy.minigameservice.bungee.StringUtil;
 import net.craftgalaxy.bungeecore.config.ConfigurationManager;
 import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutConfirmDisconnect;
 import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutCreateMinigame;
+import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutForceEnd;
 import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutPromptDisconnect;
 import net.craftgalaxy.bungeecore.player.PlayerData;
 import net.craftgalaxy.bungeecore.server.ServerData;
@@ -16,6 +17,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.scheduler.TaskScheduler;
+import net.md_5.bungee.util.CaseInsensitiveMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,13 +26,14 @@ import java.net.ServerSocket;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 
 public class ServerManager {
 
     private final BungeeCore plugin;
     private final Random random = new Random();
     private final AtomicInteger serverIds = new AtomicInteger();
-    private final Map<ServerData.ServerType, Map<String, ServerData>> servers = new HashMap<>();
+    private final Map<ServerData.ServerType, CaseInsensitiveMap<ServerData>> servers = new HashMap<>();
     private final Map<String, FutureTask<Void>> futureTasks = new HashMap<>();
     private final Queue<ServerData> inactives = new ConcurrentLinkedQueue<>();
     private final Map<ServerData.Minigames, Map<Integer, Set<ServerData>>> queued = new HashMap<>();
@@ -59,7 +62,9 @@ public class ServerManager {
                 e.printStackTrace();
             } finally {
                 try {
-                    this.serverSocket.close();
+                    if (this.serverSocket != null) {
+                        this.serverSocket.close();
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -83,7 +88,7 @@ public class ServerManager {
                 try {
                     serverData.sendPacket(new PacketPlayOutPromptDisconnect(true));
                 } catch (IOException e) {
-                    instance.plugin.getLogger().warning("Failed to send disconnection packet to " + serverData.getServerName() + ". This server may not shutdown properly.");
+                    instance.plugin.getLogger().log(Level.WARNING, "Failed to send disconnection packet to " + serverData.getServerName() + ". This server may not shutdown properly.", e);
                 }
             }
         }
@@ -116,13 +121,10 @@ public class ServerManager {
         return instance;
     }
 
+    @Nullable
     public ServerData getRandomLobby() {
         Map<String, ServerData> lobbies = this.servers.get(ServerData.ServerType.LOBBY);
-        if (lobbies == null || lobbies.isEmpty()) {
-            throw new IllegalStateException("There are no minigame lobbies connected to the proxy.");
-        } else {
-            return Iterables.get(lobbies.values(), this.random.nextInt(lobbies.size()));
-        }
+        return lobbies == null || lobbies.isEmpty() ? null : Iterables.get(lobbies.values(), this.random.nextInt(lobbies.size()));
     }
 
     @Nullable
@@ -151,7 +153,7 @@ public class ServerManager {
             case MINIGAME:
                 this.inactives.add(serverData);
             default:
-                this.servers.computeIfAbsent(serverData.getServerType(), ignored -> new HashMap<>()).put(name, serverData);
+                this.servers.computeIfAbsent(serverData.getServerType(), ignored -> new CaseInsensitiveMap<>()).put(name, serverData);
                 this.plugin.getLogger().info(ChatColor.GREEN + "Established TCP socket connection for " + (serverData.getServerType() == ServerData.ServerType.MINIGAME ? "the minigame" : "the lobby") + " server " + name + " with Server-ID " + serverData.getServerId() + ". This server can now communicate with the proxy.");
         }
     }
@@ -205,8 +207,8 @@ public class ServerManager {
                 valid = maxPlayers == 1 ? sender.hasPermission(String.format(StringUtil.SOLO_COMMAND_PERMISSION, "manhunt")) : maxPlayers >= 2 && maxPlayers <= 5;
                 break;
             case "deathswap":
-                minigame = ServerData.Minigames.INACTIVE;
-                valid = false;
+                minigame = ServerData.Minigames.DEATHSWAP;
+                valid = maxPlayers >= 2 && maxPlayers <= 5;
                 break;
             default:
                 sender.sendMessage(new TextComponent(ChatColor.RED + "That minigame has not been added to the server. To help the server grow, consider making a small donation through our online web-store."));
@@ -257,7 +259,7 @@ public class ServerManager {
             this.staging.add(serverData);
         }
 
-        serverData.sendQueuedPlayer(sender);
+        serverData.sendQueuedPlayer(sender, (byte) 0, null);
     }
 
     public void addActiveServer(@NotNull ServerData serverData, int gameKey) {
@@ -282,5 +284,56 @@ public class ServerManager {
         this.gameKeys.inverse().remove(serverData);
         this.inactives.add(serverData.reset());
         this.plugin.getLogger().info(ChatColor.GREEN + "Re-added " + serverData.getServerName() + " to the inactive server queue.");
+    }
+
+    public boolean forceEnd(int gameKey) {
+        ServerData serverData = this.gameKeys.remove(gameKey);
+        if (serverData == null) {
+            return false;
+        }
+
+        this.forceEnd(serverData);
+        return true;
+    }
+
+    public boolean forceEnd(String name) {
+        Map<String, ServerData> minigames = this.servers.get(ServerData.ServerType.MINIGAME);
+        if (minigames == null || minigames.isEmpty()) {
+            return false;
+        }
+
+        ServerData serverData = minigames.get(name);
+        if (serverData == null) {
+            return false;
+        }
+
+        this.forceEnd(serverData);
+        return true;
+    }
+
+    private void forceEnd(@NotNull ServerData serverData) {
+        try {
+            serverData.sendPacket(new PacketPlayOutForceEnd());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void handleSpectator(@NotNull PlayerData senderData, @NotNull PlayerData playerData) {
+        ProxiedPlayer sender = senderData.getPlayer();
+        ProxiedPlayer player = playerData.getPlayer();
+        if (!playerData.isPlaying()) {
+            sender.sendMessage(new TextComponent(ChatColor.RED + playerData.getName() + " is not in an active minigame."));
+            return;
+        }
+
+        ServerInfo server = player.getServer().getInfo();
+        ServerData serverData = this.getServerData(server);
+        if (serverData == null) {
+            sender.sendMessage(new TextComponent(ChatColor.RED + "An error occurred while locating the target server."));
+            return;
+        }
+
+        serverData.sendQueuedPlayer(sender, (byte) 1, player.getUniqueId());
     }
 }

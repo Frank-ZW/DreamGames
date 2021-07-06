@@ -17,7 +17,7 @@ import java.util.Set;
 
 public class ItemUtil {
 
-    public static final TextComponent SPECTATOR_GUI = Component.text("Players", TextColor.color(0.0F, 112.0F, 255.0F));
+    public static final TextComponent SPECTATOR_GUI = Component.text(ChatColor.BLUE + "Players");
     public static final TextComponent SPECTATOR_COMPASS = Component.text(ChatColor.GREEN + "Spectator Compass");
     public static final TextComponent SPECTATOR_QUIT = Component.text(ChatColor.RED + "Leave the game");
     public static final TextComponent MANHUNT_PLAYER_TRACKER = Component.text(ChatColor.RED + "Player Tracker");
