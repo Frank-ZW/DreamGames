@@ -1,6 +1,0 @@
-name: BungeeCore
-main: net.craftgalaxy.bungeecore.BungeeCore
-author: Frank
-version: 1.0.0
-depends:
-  - MinigameService

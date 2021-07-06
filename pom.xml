@@ -13,6 +13,7 @@
         <module>MinigameService</module>
         <module>MinigameCore</module>
         <module>Manhunt</module>
+        <module>DeathSwap</module>
     </modules>
 
     <properties>

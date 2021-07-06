@@ -1,8 +1,0 @@
-net\craftgalaxy\minigamecore\listener\PlayerListeners.class
-net\craftgalaxy\minigamecore\command\SettingsCommand.class
-net\craftgalaxy\minigamecore\socket\manager\CoreManager.class
-net\craftgalaxy\minigamecore\socket\SocketWrapper.class
-net\craftgalaxy\minigamecore\listener\MinigameListeners.class
-net\craftgalaxy\minigamecore\socket\manager\CoreManager$1.class
-net\craftgalaxy\minigamecore\runnable\PendingConnectionRunnable.class
-net\craftgalaxy\minigamecore\MinigameCore.class
