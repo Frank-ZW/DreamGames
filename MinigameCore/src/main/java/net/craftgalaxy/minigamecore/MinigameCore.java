@@ -1,5 +1,6 @@
 package net.craftgalaxy.minigamecore;
 
+import net.craftgalaxy.minigamecore.command.SettingsCommand;
 import net.craftgalaxy.minigamecore.listener.MinigameListeners;
 import net.craftgalaxy.minigamecore.listener.PlayerListeners;
 import net.craftgalaxy.minigamecore.socket.manager.CoreManager;
@@ -7,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -35,6 +37,10 @@ public final class MinigameCore extends JavaPlugin {
         CoreManager.enable(this);
         Bukkit.getPluginManager().registerEvents(new PlayerListeners(), this);
         Bukkit.getPluginManager().registerEvents(new MinigameListeners(), this);
+        PluginCommand settings = this.getCommand("settings");
+        if (settings != null) {
+            settings.setExecutor(new SettingsCommand());
+        }
     }
 
     @Override
@@ -58,6 +64,8 @@ public final class MinigameCore extends JavaPlugin {
                 return true;
             }
 
+            double yaw = this.getConfig().getDouble("lobby-location.yaw");
+            double pitch = this.getConfig().getDouble("lobby-location.pitch");
             double x = this.getConfig().getDouble("lobby-location.X");
             double y = this.getConfig().getDouble("lobby-location.Y");
             double z = this.getConfig().getDouble("lobby-location.Z");
@@ -65,7 +73,7 @@ public final class MinigameCore extends JavaPlugin {
                 y = world.getHighestBlockYAt((int) x, (int) z) + 1;
             }
 
-            this.lobbyLocation = new Location(world, x, y, z);
+            this.lobbyLocation = new Location(world, x, y, z, (float) yaw, (float) pitch);
             this.serverName = this.getConfig().getString("socket-settings.proxy-side-server-name");
             this.hostName = this.getConfig().getString("socket-settings.host-name");
             this.port = this.getConfig().getInt("socket-settings.port-number");
@@ -81,6 +89,8 @@ public final class MinigameCore extends JavaPlugin {
         this.getConfig().set("lobby-location.X", this.lobbyLocation.getX());
         this.getConfig().set("lobby-location.Y", this.lobbyLocation.getY());
         this.getConfig().set("lobby-location.Z", this.lobbyLocation.getZ());
+        this.getConfig().set("lobby-location.yaw", this.lobbyLocation.getYaw());
+        this.getConfig().set("lobby-location.pitch", this.lobbyLocation.getPitch());
         this.getConfig().set("socket-settings.proxy-side-server-name", this.serverName);
         this.getConfig().set("socket-settings.host-name", this.hostName);
         this.getConfig().set("socket-settings.port-number", this.port);

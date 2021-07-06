@@ -2,16 +2,19 @@ package net.craftgalaxy.minigamecore.socket.manager;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.papermc.paper.event.player.AsyncChatEvent;
+import net.craftgalaxy.deathswap.minigame.DeathSwapMinigame;
 import net.craftgalaxy.manhunt.minigame.impl.VanillaManhuntMinigame;
 import net.craftgalaxy.minigamecore.MinigameCore;
 import net.craftgalaxy.minigameservice.bukkit.chat.GameChatRenderer;
+import net.craftgalaxy.minigameservice.bukkit.chat.LobbyChatRenderer;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameEndEvent;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameEvent;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameStartEvent;
 import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractMinigame;
-import net.craftgalaxy.minigameservice.bukkit.util.ColorUtil;
-import net.craftgalaxy.minigameservice.bukkit.util.StringUtil;
+import net.craftgalaxy.minigameservice.bukkit.util.minecraft.PlayerUtil;
+import net.craftgalaxy.minigameservice.bukkit.util.java.StringUtil;
 import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutCreateMinigame;
+import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutForceEnd;
 import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutPromptDisconnect;
 import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutQueuePlayer;
 import net.craftgalaxy.minigameservice.packet.server.*;
@@ -19,9 +22,9 @@ import net.craftgalaxy.minigamecore.runnable.PendingConnectionRunnable;
 import net.craftgalaxy.minigamecore.socket.SocketWrapper;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.scheduler.BukkitTask;
@@ -38,6 +41,7 @@ public class CoreManager {
     private MinigameCore plugin;
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("Core Socket Executor").build());
     private final Map<UUID, BukkitTask> disconnections = new HashMap<>();
+    private final Map<UUID, UUID> queuedSpectators = new HashMap<>();
     private final Set<UUID> queuedPlayers = new HashSet<>();
     private Future<Void> future;
     private SocketWrapper socket;
@@ -63,7 +67,7 @@ public class CoreManager {
         instance.executor.shutdown();
         Bukkit.getScheduler().cancelTasks(instance.plugin);
         if (instance.minigame == null) {
-            Bukkit.getLogger().info(ChatColor.GREEN + "Skipping minigame shutdown since there is no currently active minigame on this server.");
+            Bukkit.getLogger().info(ChatColor.GREEN + "Ignoring minigame shutdown since there is no currently active minigame on this server.");
         } else {
             switch (instance.minigame.getStatus()) {
                 case IN_PROGRESS:
@@ -114,15 +118,24 @@ public class CoreManager {
     }
 
     public boolean searchAvailableConnections() throws IOException {
-        this.socket = new SocketWrapper(this.plugin);
+        this.socket = new SocketWrapper(this.plugin, this);
         this.future = this.executor.submit(this.socket, null);
         return this.socket.isConnected();
+    }
+
+    public void sendToProxyLobby(@NotNull Player player) {
+        try {
+            this.socket.sendPacket(new PacketPlayInPlayerAction(player.getUniqueId(), (byte) 0));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void teleportToLobby(@NotNull Player player) {
         player.teleportAsync(this.plugin.getLobbyLocation()).thenAccept(result -> {
             if (!result) {
                 player.sendMessage(StringUtil.ERROR_TELEPORTING_TO_LOBBY);
+                this.sendToProxyLobby(player);
             }
         });
     }
@@ -138,7 +151,21 @@ public class CoreManager {
                 }
             });
         } else if (object instanceof PacketPlayOutQueuePlayer) {
-            this.queuedPlayers.add(((PacketPlayOutQueuePlayer) object).getPlayer());
+            PacketPlayOutQueuePlayer packet = (PacketPlayOutQueuePlayer) object;
+            switch (packet.getType()) {
+                case 0:
+                    this.queuedPlayers.add(packet.getPlayer());
+                    break;
+                case 1:
+                    if (packet.getTarget() == null) {
+                        return;
+                    }
+
+                    this.queuedSpectators.put(packet.getPlayer(), packet.getTarget());
+                    break;
+                default:
+                    Bukkit.getLogger().warning("Received an unknown packet queue type of " + packet.getType() + ". This packet will be ignored.");
+            }
         } else if (object instanceof PacketPlayOutCreateMinigame) {
             PacketPlayOutCreateMinigame packet = (PacketPlayOutCreateMinigame) object;
             switch (packet.getMode()) {
@@ -146,6 +173,7 @@ public class CoreManager {
                     this.minigame = new VanillaManhuntMinigame(packet.getGameKey(), this.plugin.getLobbyLocation());
                     break;
                 case 1:
+                    this.minigame = new DeathSwapMinigame(packet.getGameKey(), this.plugin.getLobbyLocation());
                     break;
                 default:
                     Bukkit.getLogger().warning("Received an unknown minigame creation request of ID " + packet.getMode() + ". This minigame request will be ignored...");
@@ -153,6 +181,40 @@ public class CoreManager {
             }
 
             this.maxPlayers = packet.getMaxPlayers();
+        } else if (object instanceof PacketPlayOutForceEnd) {
+            Bukkit.getScheduler().runTask(this.plugin, this::handleForceEnd);
+        }
+    }
+
+    public void handleForceEnd() {
+        if (this.minigame == null) {
+            return;
+        }
+
+        Bukkit.broadcast(Component.text(ChatColor.GREEN + "The " + this.minigame.getName() + " you were in was forcefully ended."));
+        switch (this.minigame.getStatus()) {
+            case IN_PROGRESS:
+                this.minigame.endMinigame(true);
+                break;
+            case FINISHED:
+                this.minigame.endTeleport();
+                this.minigame.deleteWorlds();
+                break;
+            default:
+                if (this.minigame.getStatus().isCountingDown()) {
+                    this.queuedPlayers.addAll(this.minigame.getPlayers());
+                    this.minigame.cancelCountdown();
+                }
+
+                if (this.queuedPlayers.isEmpty()) {
+                    return;
+                }
+
+                try {
+                    this.socket.sendPacket(new PacketPlayInEndMinigame(this.queuedPlayers));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
         }
     }
 
@@ -176,6 +238,7 @@ public class CoreManager {
                         this.maxPlayers = 0;
                         this.minigame.deleteWorlds(true);
                         this.minigame.unload();
+                        this.queuedSpectators.clear();
                         this.minigame = null;
                     }
                 } else {
@@ -201,6 +264,7 @@ public class CoreManager {
                             this.maxPlayers = 0;
                             this.minigame.deleteWorlds(true);
                             this.minigame.unload();
+                            this.queuedSpectators.clear();
                             this.minigame = null;
                         }
                     }
@@ -210,6 +274,10 @@ public class CoreManager {
 
                 break;
             case IN_PROGRESS:
+                if (!this.minigame.isPlayer(player.getUniqueId())) {
+                    return;
+                }
+
                 if (this.minigame.isSpectator(player.getUniqueId())) {
                     this.minigame.removePlayer(player);
                 } else {
@@ -238,6 +306,10 @@ public class CoreManager {
             player.spigot().respawn();
         }
 
+        if (player.getGameMode() != GameMode.SURVIVAL) {
+            player.setGameMode(GameMode.SURVIVAL);
+        }
+
         if (this.minigame == null) {
             return;
         }
@@ -260,14 +332,15 @@ public class CoreManager {
                             }
                         } else {
                             try {
-                                Bukkit.broadcast(Component.text("An error occurred while loading up the world for " + this.minigame.getName() + ". You have been sent back to the minigame lobby.", TextColor.color(ColorUtil.BUKKIT_RED_CODE)));
-                                this.socket.sendPacket(new PacketPlayInPlayerAction((byte) 0, this.queuedPlayers));
+                                Bukkit.broadcast(Component.text(ChatColor.RED + "An error occurred while loading up the world for " + this.minigame.getName() + ". You have been sent back to the minigame lobby."));
+                                this.socket.sendPacket(new PacketPlayInPlayerAction(this.queuedPlayers, (byte) 0));
                                 this.socket.sendPacket(new PacketPlayInServerQueue(true));
                                 this.minigame.deleteWorlds();
                             } catch (IOException e) {
                                 e.printStackTrace();
                             } finally {
                                 this.queuedPlayers.clear();
+                                this.queuedSpectators.clear();
                             }
                         }
                     }
@@ -276,9 +349,30 @@ public class CoreManager {
                 break;
             case IN_PROGRESS:
             case FINISHED:
+                this.queuedSpectators.computeIfPresent(player.getUniqueId(), (k, v) -> {
+                    Player target = Bukkit.getPlayer(v);
+                    if (target == null) {
+                        this.sendToProxyLobby(player);
+                        return null;
+                    }
+
+                    player.teleportAsync(target.getLocation()).thenAccept(result -> {
+                        if (result) {
+                            this.minigame.hideSpectator(player);
+                            PlayerUtil.setSpectator(player);
+                            player.sendMessage(ChatColor.GREEN + "You are now spectating " + target.getName() + ".");
+                        } else {
+                            player.sendMessage(ChatColor.RED + "Failed to teleport you to " + target.getName() + ". You have been connected back to the lobby.");
+                            this.sendToProxyLobby(player);
+                        }
+                    });
+
+                    return null;
+                });
+
                 this.disconnections.computeIfPresent(player.getUniqueId(), (uniqueId, task) -> {
                     task.cancel();
-                    if (!this.minigame.isSpectator(uniqueId)) {
+                    if (this.minigame.isPlayer(uniqueId) && !this.minigame.isSpectator(uniqueId)) {
                         Bukkit.broadcast(this.minigame.getGameDisplayName(player).append(Component.text(ChatColor.GRAY + " reconnected.")));
                     }
 
@@ -315,37 +409,52 @@ public class CoreManager {
 
                     this.maxPlayers = 0;
                     this.minigame.unload();
+                    this.queuedSpectators.clear();
                     this.minigame = null;
                 }
+            }
+
+            return;
+        }
+
+        if (event instanceof AsyncChatEvent) {
+            AsyncChatEvent e = (AsyncChatEvent) event;
+            if (this.minigame == null) {
+                e.renderer(new LobbyChatRenderer());
+                return;
+            }
+
+            Iterator<Audience> iterator = e.viewers().iterator();
+            while (iterator.hasNext()) {
+                Audience audience = iterator.next();
+                if (!(audience instanceof Player)) {
+                    iterator.remove();
+                    continue;
+                }
+
+                Player recipient = (Player) audience;
+                if (this.minigame.isPlayer(uniqueId) ? (this.minigame.isSpectator(uniqueId) ? !this.minigame.isSpectator(recipient.getUniqueId()) : !this.minigame.isPlayer(recipient.getUniqueId())) : this.minigame.isPlayer(recipient.getUniqueId())) {
+                    iterator.remove();
+                    continue;
+                }
+
+                e.renderer(new GameChatRenderer(this.minigame));
             }
         } else {
             if (this.minigame == null) {
                 return;
             }
 
-            if (event instanceof AsyncChatEvent) {
-                AsyncChatEvent e = (AsyncChatEvent) event;
-                Iterator<Audience> iterator = e.viewers().iterator();
-                while (iterator.hasNext()) {
-                    Audience audience = iterator.next();
-                    if (!(audience instanceof Player)) {
-                        iterator.remove();
-                        continue;
-                    }
-
-                    Player recipient = (Player) audience;
-                    if (this.minigame.isPlayer(uniqueId) ? (this.minigame.isSpectator(uniqueId) ? !this.minigame.isSpectator(recipient.getUniqueId()) : !this.minigame.isPlayer(recipient.getUniqueId())) : this.minigame.isPlayer(recipient.getUniqueId())) {
-                        iterator.remove();
-                        continue;
-                    }
-
-                    e.renderer(new GameChatRenderer(this.minigame));
-                }
-            } else if (this.minigame.isSpectator(uniqueId)) {
-                this.minigame.handleSpectatorEvent(event);
-            } else {
+            if (this.minigame.isPlayer(uniqueId) && !this.minigame.isSpectator(uniqueId)) {
                 this.minigame.handleEvent(event);
+            } else {
+                this.minigame.handleSpectatorEvent(event);
             }
         }
+    }
+
+    @Nullable
+    public AbstractMinigame getMinigame() {
+        return this.minigame;
     }
 }

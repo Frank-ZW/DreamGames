@@ -5,6 +5,7 @@ import net.craftgalaxy.minigameservice.packet.MinigamePacketPlayIn;
 import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutConfirmDisconnect;
 import net.craftgalaxy.minigameservice.packet.server.PacketPlayInServerConnect;
 import net.craftgalaxy.minigamecore.socket.manager.CoreManager;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.EOFException;
@@ -17,11 +18,13 @@ public class SocketWrapper implements Runnable {
 
     private final MinigameCore plugin;
     private final Socket socket;
+    private final CoreManager manager;
     private ObjectOutputStream output;
     private ObjectInputStream input;
 
-    public SocketWrapper(MinigameCore plugin) throws IOException {
+    public SocketWrapper(MinigameCore plugin, CoreManager manager) throws IOException {
         this.plugin = plugin;
+        this.manager = manager;
         this.socket = new Socket(plugin.getHostName(), plugin.getPort());
     }
 
@@ -53,10 +56,11 @@ public class SocketWrapper implements Runnable {
             this.sendPacket(new PacketPlayInServerConnect(plugin.getServerName()));
             while (true) {
                 Object object = this.input.readObject();
+                Bukkit.getLogger().info("Connected: " + this.socket.isConnected());
                 if (object instanceof PacketPlayOutConfirmDisconnect) {
                     break;
                 } else {
-                    CoreManager.getInstance().handlePacket(object);
+                    this.manager.handlePacket(object);
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
