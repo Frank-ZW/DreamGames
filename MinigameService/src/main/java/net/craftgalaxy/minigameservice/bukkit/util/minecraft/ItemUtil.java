@@ -1,9 +1,8 @@
-package net.craftgalaxy.minigameservice.bukkit.util;
+package net.craftgalaxy.minigameservice.bukkit.util.minecraft;
 
 import com.google.common.collect.ImmutableSet;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.format.TextColor;
 import net.minecraft.server.v1_16_R3.NBTTagCompound;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;

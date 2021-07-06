@@ -10,14 +10,14 @@ import java.util.UUID;
 public class PacketPlayInPlayerAction extends MinigamePacketPlayIn implements Serializable {
 
     private static final long serialVersionUID = -3153239630303535943L;
-    private final byte action;
     private final Collection<UUID> players;
+    private final byte action;
 
-    public PacketPlayInPlayerAction(byte action, UUID player) {
-        this(action, Collections.singletonList(player));
+    public PacketPlayInPlayerAction(UUID player, byte action) {
+        this(Collections.singletonList(player), action);
     }
 
-    public PacketPlayInPlayerAction(byte action, Collection<UUID> players) {
+    public PacketPlayInPlayerAction(Collection<UUID> players, byte action) {
         this.action = action;
         this.players = players;
     }

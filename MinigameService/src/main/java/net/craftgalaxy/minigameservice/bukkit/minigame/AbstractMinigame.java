@@ -5,9 +5,11 @@ import com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent;
 import net.craftgalaxy.minigameservice.bukkit.MinigameService;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameEndEvent;
 import net.craftgalaxy.minigameservice.bukkit.runnable.CountdownRunnable;
-import net.craftgalaxy.minigameservice.bukkit.util.ItemUtil;
-import net.craftgalaxy.minigameservice.bukkit.util.PlayerUtil;
+import net.craftgalaxy.minigameservice.bukkit.util.minecraft.ItemUtil;
+import net.craftgalaxy.minigameservice.bukkit.util.minecraft.PlayerUtil;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainComponentSerializer;
+import net.kyori.adventure.title.Title;
 import net.milkbowl.vault.chat.Chat;
 import net.minecraft.server.v1_16_R3.NBTTagCompound;
 import org.apache.commons.lang.StringUtils;
@@ -35,6 +37,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.*;
 
 public abstract class AbstractMinigame {
@@ -95,11 +98,11 @@ public abstract class AbstractMinigame {
         return this.players.contains(uniqueId);
     }
 
-    public void broadcastTitleAndEffect(String message, Effect effect) {
+    public void sendTitleAndEffect(Component title, Effect effect) {
         for (UUID uniqueId : this.players) {
             Player player = Bukkit.getPlayer(uniqueId);
             if (player != null) {
-                player.sendTitle(message, null, 5, 15, 5);
+                player.showTitle(Title.title(title, Component.empty(), Title.Times.of(Duration.ofMillis(250), Duration.ofMillis(750), Duration.ofMillis(250))));
                 player.playEffect(player.getLocation(), effect, effect.getData());
             }
         }
@@ -128,7 +131,7 @@ public abstract class AbstractMinigame {
 
         this.status = MinigameStatus.WAITING;
         this.countdown.cancel();
-        this.broadcastTitleAndEffect(ChatColor.RED + "CANCELLED!", Effect.CLICK2);
+        this.sendTitleAndEffect(Component.text(ChatColor.RED + "CANCELLED!"), Effect.CLICK2);
         this.spectators.clear();
         this.players.clear();
     }
@@ -296,12 +299,18 @@ public abstract class AbstractMinigame {
             if (e.getView().title().equals(ItemUtil.SPECTATOR_GUI)) {
                 ItemStack clicked = e.getCurrentItem();
                 if (clicked != null && clicked.getType() == Material.PLAYER_HEAD) {
-                    Player spectated = Bukkit.getPlayer(ChatColor.stripColor(clicked.getItemMeta().getDisplayName()));
+                    Player clicker = (Player) e.getWhoClicked();
+                    Component displayName = clicked.getItemMeta().displayName();
+                    if (displayName == null) {
+                        clicker.sendMessage(Component.text(ChatColor.RED + "An error occurred while retrieving the player head clicked. This shouldn't happen but if it does, contact an administrator."));
+                        return;
+                    }
+
+                    Player spectated = Bukkit.getPlayer(PlainComponentSerializer.plain().serialize(displayName));
                     if (spectated == null) {
                         return;
                     }
 
-                    Player clicker = (Player) e.getWhoClicked();
                     clicker.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
                     clicker.teleportAsync(spectated.getLocation()).thenAccept(result -> {
                         if (result) {
@@ -366,6 +375,14 @@ public abstract class AbstractMinigame {
         FINISHED;
 
         MinigameStatus() {}
+
+        public boolean isWaiting() {
+            return this == MinigameStatus.WAITING;
+        }
+
+        public boolean isCountingDown() {
+            return this == MinigameStatus.COUNTING_DOWN;
+        }
 
         public boolean isInProgress() {
             return this == MinigameStatus.IN_PROGRESS;

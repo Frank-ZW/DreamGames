@@ -1,12 +1,14 @@
 package net.craftgalaxy.minigameservice.bukkit.minigame;
 
-import net.craftgalaxy.minigameservice.bukkit.util.PlayerUtil;
+import net.craftgalaxy.minigameservice.bukkit.util.minecraft.PlayerUtil;
+import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.craftbukkit.libs.org.apache.commons.io.FileUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.world.PortalCreateEvent;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,6 +20,7 @@ public abstract class AbstractSurvivalMinigame extends AbstractMinigame {
     protected Map<World.Environment, World> worlds = new HashMap<>();
     protected Map<UUID, Set<Advancement>> advancements = new HashMap<>();
     protected WorldType worldType;
+    protected long seed;
     protected boolean allowNether;
     protected boolean allowEnd;
 
@@ -28,8 +31,13 @@ public abstract class AbstractSurvivalMinigame extends AbstractMinigame {
     public AbstractSurvivalMinigame(int gameKey, String name, Location lobby, boolean allowNether, boolean allowEnd) {
         super(gameKey, name, lobby);
         this.worldType = WorldType.NORMAL;
+        this.seed = this.random.nextLong();
         this.allowNether = allowNether;
         this.allowEnd = allowEnd;
+    }
+
+    public void setSeed(long seed) {
+        this.seed = seed;
     }
 
     /**
@@ -182,7 +190,13 @@ public abstract class AbstractSurvivalMinigame extends AbstractMinigame {
 
         for (int i = 0; i < 3; i++) {
             World.Environment environment = World.Environment.values()[i];
-            this.worlds.put(environment, new WorldCreator(this.getWorldName(environment)).type(this.worldType).environment(environment).createWorld());
+            World world = new WorldCreator(this.getWorldName(environment)).environment(environment).type(this.worldType).seed(this.seed).createWorld();
+            if (world != null) {
+                world.setAutoSave(false);
+                world.setKeepSpawnInMemory(false);
+                world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+                this.worlds.put(environment, world);
+            }
         }
 
         return this.worlds.size() == 3;
@@ -248,6 +262,20 @@ public abstract class AbstractSurvivalMinigame extends AbstractMinigame {
                         e.setCancelled(true);
                     }
             }
+        } else if (event instanceof PlayerRespawnEvent) {
+            PlayerRespawnEvent e = (PlayerRespawnEvent) event;
+            if (this.status.isWaiting()) {
+                return;
+            }
+
+            if (this.getOverworld() == null) {
+                Bukkit.broadcast(Component.text(ChatColor.RED + "The " + this.getName() + " overworld failed to generate properly... Contact an administrator if this occurs."));
+                this.endMinigame(true);
+                return;
+            }
+
+            Player player = e.getPlayer();
+            e.setRespawnLocation(player.getBedSpawnLocation() == null ? this.getOverworld().getSpawnLocation() : player.getBedSpawnLocation());
         }
     }
 

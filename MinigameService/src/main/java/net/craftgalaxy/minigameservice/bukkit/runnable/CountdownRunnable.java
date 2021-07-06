@@ -3,6 +3,7 @@ package net.craftgalaxy.minigameservice.bukkit.runnable;
 import com.google.common.collect.ImmutableSet;
 import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractMinigame;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameStartEvent;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Effect;
@@ -35,7 +36,7 @@ public class CountdownRunnable extends BukkitRunnable {
     @Override
     public void run() {
         if (this.timestamps.contains(this.countdown)) {
-            this.minigame.broadcastTitleAndEffect(this.translateCountdownColor(this.countdown), Effect.CLICK2);
+            this.minigame.sendTitleAndEffect(Component.text(this.translateCountdownColor(this.countdown)), Effect.CLICK2);
         }
 
         if (this.countdown <= 0) {
@@ -49,12 +50,15 @@ public class CountdownRunnable extends BukkitRunnable {
     }
 
     public String translateCountdownColor(int countdown) {
-        if (countdown > 4) {
-            return ChatColor.GREEN.toString() + countdown;
-        } else if (countdown > 2) {
-            return ChatColor.GOLD.toString() + countdown;
-        } else {
-            return ChatColor.RED.toString() + countdown;
+        switch (countdown) {
+            case 1:
+            case 2:
+                return ChatColor.RED.toString() + countdown;
+            case 3:
+            case 4:
+                return ChatColor.GOLD.toString() + countdown;
+            default:
+                return ChatColor.GREEN.toString() + countdown;
         }
     }
 }

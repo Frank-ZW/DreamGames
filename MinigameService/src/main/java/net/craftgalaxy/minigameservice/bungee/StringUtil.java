@@ -8,4 +8,6 @@ public class StringUtil {
     public static final String INSUFFICIENT_PERMISSION = ChatColor.RED + "You do not have permission to run this command.";
 
     public static final String SOLO_COMMAND_PERMISSION = "bungeecore.command.%s.solo";
+    public static final String FORCE_END_COMMAND_PERMISSION = "bungeecore.command.forceend";
+    public static final String SPECTATE_COMMAND_PERMISSION = "bungeecore.command.spectate";
 }

@@ -2,7 +2,7 @@ package net.craftgalaxy.minigameservice.bukkit.chat;
 
 import io.papermc.paper.chat.ChatRenderer;
 import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractMinigame;
-import net.craftgalaxy.minigameservice.bukkit.util.StringUtil;
+import net.craftgalaxy.minigameservice.bukkit.util.java.StringUtil;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;
