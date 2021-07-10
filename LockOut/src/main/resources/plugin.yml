@@ -1,0 +1,8 @@
+name: LockOut
+main: net.craftgalaxy.lockout.LockOut
+version: ${project.version}
+author: Frank
+api-version: 1.16
+depend:
+  - MinigameService
+  - Vault
