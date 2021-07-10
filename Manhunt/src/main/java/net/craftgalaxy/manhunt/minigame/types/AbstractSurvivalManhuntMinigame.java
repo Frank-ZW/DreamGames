@@ -24,6 +24,10 @@ public abstract class AbstractSurvivalManhuntMinigame extends AbstractManhuntMin
         super(gameKey, lobby);
     }
 
+    public AbstractSurvivalManhuntMinigame(int gameKey, String name, Location lobby) {
+        super(gameKey, name, lobby);
+    }
+
     @Override
     public void handleEvent(Event event) {
         super.handleEvent(event);
@@ -31,9 +35,10 @@ public abstract class AbstractSurvivalManhuntMinigame extends AbstractManhuntMin
             Player player = ((PlayerEvent) event).getPlayer();
             if (event instanceof PlayerInteractEvent) {
                 PlayerInteractEvent e = (PlayerInteractEvent) event;
+                ItemStack item = e.getItem();
                 Block clicked = e.getClickedBlock();
-                if (this.isHunter(player.getUniqueId()) && (e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR) && e.getItem() != null && this.isPlayerTracker(e.getItem())) {
-                    this.updatePlayerTracker(player, e.getItem());
+                if (this.isHunter(player.getUniqueId()) && (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_AIR) && item != null && this.isPlayerTracker(item)) {
+                    this.updatePlayerTracker(player, this.getSpeedrunnerPlayer(), item);
                 }
 
                 if (e.getAction() == Action.RIGHT_CLICK_BLOCK && player.getWorld().getEnvironment() == World.Environment.NETHER && ItemUtil.isBed(clicked) && !this.bedBombing) {
@@ -51,7 +56,7 @@ public abstract class AbstractSurvivalManhuntMinigame extends AbstractManhuntMin
                 }
             } else if (event instanceof PlayerRespawnEvent) {
                 if (this.isHunter(player.getUniqueId())) {
-                    player.getInventory().setItem(8, ItemUtil.createPlayerTracker(ItemUtil.MANHUNT_PLAYER_TRACKER));
+                    player.getInventory().setItem(8, this.createPlayerTracker());
                 }
             } else if (event instanceof PlayerAdvancementDoneEvent) {
                 this.addAwardedAdvancement(player, ((PlayerAdvancementDoneEvent) event).getAdvancement());

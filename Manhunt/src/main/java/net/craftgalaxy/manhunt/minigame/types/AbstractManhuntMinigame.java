@@ -1,17 +1,13 @@
 package net.craftgalaxy.manhunt.minigame.types;
 
-import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractSurvivalMinigame;
+import net.craftgalaxy.minigameservice.bukkit.minigame.impl.PlayerTrackerHandler;
+import net.craftgalaxy.minigameservice.bukkit.minigame.types.AbstractSurvivalMinigame;
+import net.craftgalaxy.minigameservice.bukkit.minigame.functional.IPlayerTracker;
 import net.craftgalaxy.minigameservice.bukkit.util.minecraft.ItemUtil;
 import net.kyori.adventure.text.Component;
-import net.minecraft.server.v1_16_R3.NBTTagCompound;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.CompassMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,14 +16,20 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public abstract class AbstractManhuntMinigame extends AbstractSurvivalMinigame {
+public abstract class AbstractManhuntMinigame extends AbstractSurvivalMinigame implements IPlayerTracker {
 
     protected UUID speedrunner;
     protected final Set<UUID> hunters = new HashSet<>();
     protected boolean bedBombing;
+    private final IPlayerTracker playerTrackerHandler;
 
     public AbstractManhuntMinigame(int gameKey, Location lobby) {
-        super(gameKey, "Manhunt", lobby);
+        this(gameKey, "Manhunt", lobby);
+    }
+
+    public AbstractManhuntMinigame(int gameKey, String name, Location lobby) {
+        super(gameKey, name, lobby);
+        this.playerTrackerHandler = new PlayerTrackerHandler(ItemUtil.DEFAULT_PLAYER_TRACKER, "manhunt_player_tracker");
         this.bedBombing = false;
     }
 
@@ -36,36 +38,23 @@ public abstract class AbstractManhuntMinigame extends AbstractSurvivalMinigame {
      * to the speedrunner's latest location only when it is interacted with.
      * <p>
      * The item passed must be a compass.
-     *
      * @param hunter    The hunter right clicking the compass.
+     * @param target    The target the player tracker should point to.
      * @param compass   The compass being clicked.
      */
-    public void updatePlayerTracker(@NotNull Player hunter, @NotNull ItemStack compass) {
-        Player player = this.getSpeedrunnerPlayer();
-        if (player == null) {
-            hunter.sendActionBar(Component.text(ChatColor.RED + "There are no players to track!"));
-            return;
-        }
-
-        CompassMeta compassMeta = (CompassMeta) compass.getItemMeta();
-        if (hunter.getWorld().equals(player.getWorld())) {
-            compassMeta.setLodestone(player.getLocation());
-            compassMeta.setLodestoneTracked(false);
-            compass.setItemMeta(compassMeta);
-            hunter.sendActionBar(Component.text( ChatColor.GREEN + "Currently tracking " + player.getName() + "'s latest location."));
-        } else {
-            hunter.sendActionBar(Component.text(ChatColor.RED + "There are no players to track!"));
-        }
+    @Override
+    public void updatePlayerTracker(@NotNull Player hunter, @Nullable Player target, @NotNull ItemStack compass) {
+        this.playerTrackerHandler.updatePlayerTracker(hunter, target, compass);
     }
 
-    public boolean isPlayerTracker(@Nullable ItemStack item) {
-        if (item == null) {
-            return false;
-        }
+    @Override
+    public boolean isPlayerTracker(@NotNull ItemStack item) {
+        return this.playerTrackerHandler.isPlayerTracker(item);
+    }
 
-        net.minecraft.server.v1_16_R3.ItemStack nms = CraftItemStack.asNMSCopy(item);
-        NBTTagCompound compound = nms.getTag();
-        return compound != null && compound.getBoolean("player_tracker") && item.getItemMeta() instanceof CompassMeta;
+    @Override
+    public @NotNull ItemStack createPlayerTracker() {
+        return this.playerTrackerHandler.createPlayerTracker();
     }
 
     public boolean isSpeedrunner(@NotNull UUID uniqueId) {
@@ -110,7 +99,7 @@ public abstract class AbstractManhuntMinigame extends AbstractSurvivalMinigame {
             to = this.getOverworld().getSpawnLocation();
             return !super.onPlayerStartTeleport(player, to);
         } else {
-            player.getInventory().setItem(8, ItemUtil.createPlayerTracker(ItemUtil.MANHUNT_PLAYER_TRACKER));
+            player.getInventory().setItem(8, this.createPlayerTracker());
             return super.onPlayerStartTeleport(player, to);
         }
     }
