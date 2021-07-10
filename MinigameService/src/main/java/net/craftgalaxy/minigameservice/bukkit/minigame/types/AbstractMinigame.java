@@ -1,4 +1,4 @@
-package net.craftgalaxy.minigameservice.bukkit.minigame;
+package net.craftgalaxy.minigameservice.bukkit.minigame.types;
 
 import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
 import com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent;
@@ -47,6 +47,7 @@ public abstract class AbstractMinigame {
     protected final Set<UUID> spectators = new HashSet<>();
     protected final Random random = new Random();
     protected BukkitRunnable countdown;
+    protected Difficulty difficulty;
 
     protected final String name;
     protected final Location lobby;
@@ -60,6 +61,7 @@ public abstract class AbstractMinigame {
         this.name = name;
         this.lobby = lobby;
         this.status = MinigameStatus.WAITING;
+        this.difficulty = Difficulty.HARD;
     }
 
     public int getGameKey() {
@@ -82,11 +84,19 @@ public abstract class AbstractMinigame {
         return StringUtils.capitalize(this.getRawName()) + "_" + this.gameKey + "_" + StringUtils.capitalize(StringUtils.lowerCase(String.valueOf(environment)));
     }
 
+    public Difficulty getDifficulty() {
+        return this.difficulty;
+    }
+
+    public void setDifficulty(Difficulty difficulty) {
+        this.difficulty = difficulty;
+    }
+
     public int getNumPlayers() {
         return this.players.size();
     }
 
-    public Set<UUID> getPlayers() {
+    public Collection<UUID> getPlayers() {
         return this.players;
     }
 

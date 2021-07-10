@@ -1,4 +1,4 @@
-package net.craftgalaxy.minigameservice.bukkit.minigame;
+package net.craftgalaxy.minigameservice.bukkit.minigame.types;
 
 import net.craftgalaxy.minigameservice.bukkit.util.minecraft.PlayerUtil;
 import net.kyori.adventure.text.Component;
@@ -192,9 +192,13 @@ public abstract class AbstractSurvivalMinigame extends AbstractMinigame {
             World.Environment environment = World.Environment.values()[i];
             World world = new WorldCreator(this.getWorldName(environment)).environment(environment).type(this.worldType).seed(this.seed).createWorld();
             if (world != null) {
+                if (environment == World.Environment.NORMAL) {
+                    world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+                }
+
+                world.setDifficulty(this.getDifficulty());
                 world.setAutoSave(false);
                 world.setKeepSpawnInMemory(false);
-                world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
                 this.worlds.put(environment, world);
             }
         }

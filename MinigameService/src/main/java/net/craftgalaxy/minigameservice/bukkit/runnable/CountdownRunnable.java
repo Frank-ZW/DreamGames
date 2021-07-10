@@ -1,7 +1,7 @@
 package net.craftgalaxy.minigameservice.bukkit.runnable;
 
 import com.google.common.collect.ImmutableSet;
-import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractMinigame;
+import net.craftgalaxy.minigameservice.bukkit.minigame.types.AbstractMinigame;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameStartEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;

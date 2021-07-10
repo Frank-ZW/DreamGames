@@ -1,6 +1,6 @@
 package net.craftgalaxy.minigameservice.bukkit.event;
 
-import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractMinigame;
+import net.craftgalaxy.minigameservice.bukkit.minigame.types.AbstractMinigame;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 

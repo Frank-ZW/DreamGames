@@ -19,7 +19,9 @@ public class ItemUtil {
     public static final TextComponent SPECTATOR_GUI = Component.text(ChatColor.BLUE + "Players");
     public static final TextComponent SPECTATOR_COMPASS = Component.text(ChatColor.GREEN + "Spectator Compass");
     public static final TextComponent SPECTATOR_QUIT = Component.text(ChatColor.RED + "Leave the game");
-    public static final TextComponent MANHUNT_PLAYER_TRACKER = Component.text(ChatColor.RED + "Player Tracker");
+    public static final TextComponent DEFAULT_PLAYER_TRACKER = Component.text(ChatColor.RED + "Player Tracker");
+    public static final TextComponent LOCKOUT_BOARD_TITLE = Component.text(ChatColor.BLUE + "Challenges");
+    public static final TextComponent LOCKOUT_PLAYER_TRACKER = Component.text(ChatColor.GREEN + "Players");
     private static final Set<Material> BED_ITEMS = ImmutableSet.of(
             Material.BLACK_BED,
             Material.BLUE_BED,
@@ -57,6 +59,7 @@ public class ItemUtil {
         return CraftItemStack.asBukkitCopy(nms);
     }
 
+    @Deprecated
     public static ItemStack createPlayerTracker(@NotNull Component name) {
         return ItemUtil.createTaggedItem(Material.COMPASS, name, "player_tracker");
     }
