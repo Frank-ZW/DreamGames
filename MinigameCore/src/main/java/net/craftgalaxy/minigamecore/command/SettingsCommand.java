@@ -1,8 +1,8 @@
 package net.craftgalaxy.minigamecore.command;
 
 import net.craftgalaxy.minigamecore.socket.manager.CoreManager;
-import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractMinigame;
-import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractSurvivalMinigame;
+import net.craftgalaxy.minigameservice.bukkit.minigame.types.AbstractMinigame;
+import net.craftgalaxy.minigameservice.bukkit.minigame.types.AbstractSurvivalMinigame;
 import net.craftgalaxy.minigameservice.bungee.StringUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;

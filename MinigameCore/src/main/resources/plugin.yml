@@ -10,3 +10,4 @@ depend:
   - MinigameService
   - Manhunt
   - DeathSwap
+  - LockOut

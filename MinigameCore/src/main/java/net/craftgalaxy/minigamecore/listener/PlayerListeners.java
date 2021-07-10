@@ -1,5 +1,6 @@
 package net.craftgalaxy.minigamecore.listener;
 
+import com.destroystokyo.paper.event.block.TNTPrimeEvent;
 import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
 import com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent;
 import io.papermc.paper.event.player.AsyncChatEvent;
@@ -10,6 +11,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
@@ -154,4 +156,67 @@ public class PlayerListeners implements Listener {
             this.manager.handleEvent(e, e.getEntity().getUniqueId());
         }
     }
+
+    @EventHandler
+    public void onPlayerConsumeItem(PlayerItemConsumeEvent e) {
+        this.manager.handleEvent(e, e.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
+    public void onEntityBreed(EntityBreedEvent e) {
+        if (e.getBreeder() instanceof Player) {
+            this.manager.handleEvent(e, e.getBreeder().getUniqueId());
+        }
+    }
+
+    @EventHandler
+    public void onPlayerEggThrow(PlayerEggThrowEvent e) {
+        this.manager.handleEvent(e, e.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent e) {
+        if (e.getEntity() instanceof Player) {
+            this.manager.handleEvent(e, e.getEntity().getUniqueId());
+        }
+
+        if (e.getEntity().getKiller() != null) {
+            this.manager.handleEvent(e, e.getEntity().getKiller().getUniqueId());
+        }
+    }
+
+    @EventHandler
+    public void onPlayerShearEntity(PlayerShearEntityEvent e) {
+        this.manager.handleEvent(e, e.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
+    public void onEntityTame(EntityTameEvent e) {
+        if (e.getOwner() instanceof Player) {
+            this.manager.handleEvent(e, e.getOwner().getUniqueId());
+        }
+    }
+
+    @EventHandler
+    public void onItemEnchant(EnchantItemEvent e) {
+        this.manager.handleEvent(e, e.getEnchanter().getUniqueId());
+    }
+
+    @EventHandler
+    public void onBedEnter(PlayerBedEnterEvent e) {
+        this.manager.handleEvent(e, e.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
+    public void onTNTPrime(TNTPrimeEvent e) {
+        if (e.getPrimerEntity() instanceof Player) {
+            this.manager.handleEvent(e, e.getPrimerEntity().getUniqueId());
+        }
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent e) {
+        this.manager.handleEvent(e, e.getPlayer().getUniqueId());
+    }
+
 }

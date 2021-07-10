@@ -3,6 +3,7 @@ package net.craftgalaxy.minigamecore.socket.manager;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.craftgalaxy.deathswap.minigame.DeathSwapMinigame;
+import net.craftgalaxy.lockout.minigame.LockOutMinigame;
 import net.craftgalaxy.manhunt.minigame.impl.VanillaManhuntMinigame;
 import net.craftgalaxy.minigamecore.MinigameCore;
 import net.craftgalaxy.minigameservice.bukkit.chat.GameChatRenderer;
@@ -10,7 +11,7 @@ import net.craftgalaxy.minigameservice.bukkit.chat.LobbyChatRenderer;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameEndEvent;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameEvent;
 import net.craftgalaxy.minigameservice.bukkit.event.MinigameStartEvent;
-import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractMinigame;
+import net.craftgalaxy.minigameservice.bukkit.minigame.types.AbstractMinigame;
 import net.craftgalaxy.minigameservice.bukkit.util.minecraft.PlayerUtil;
 import net.craftgalaxy.minigameservice.bukkit.util.java.StringUtil;
 import net.craftgalaxy.minigameservice.packet.client.PacketPlayOutCreateMinigame;
@@ -175,11 +176,15 @@ public class CoreManager {
                 case 1:
                     this.minigame = new DeathSwapMinigame(packet.getGameKey(), this.plugin.getLobbyLocation());
                     break;
+                case 2:
+                    this.minigame = new LockOutMinigame(packet.getGameKey(), this.plugin.getLobbyLocation());
+                    break;
                 default:
                     Bukkit.getLogger().warning("Received an unknown minigame creation request of ID " + packet.getMode() + ". This minigame request will be ignored...");
                     return;
             }
 
+            Bukkit.getLogger().info(ChatColor.GREEN + "Reached max player statement");
             this.maxPlayers = packet.getMaxPlayers();
         } else if (object instanceof PacketPlayOutForceEnd) {
             Bukkit.getScheduler().runTask(this.plugin, this::handleForceEnd);
