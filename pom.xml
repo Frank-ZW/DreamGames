@@ -14,6 +14,7 @@
         <module>MinigameCore</module>
         <module>Manhunt</module>
         <module>DeathSwap</module>
+        <module>LockOut</module>
     </modules>
 
     <properties>
