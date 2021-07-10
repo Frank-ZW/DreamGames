@@ -210,6 +210,10 @@ public class ServerManager {
                 minigame = ServerData.Minigames.DEATHSWAP;
                 valid = maxPlayers >= 2 && maxPlayers <= 5;
                 break;
+            case "lockout":
+                minigame = ServerData.Minigames.LOCKOUT;
+                valid = maxPlayers >= 2 && maxPlayers <= 4;
+                break;
             default:
                 sender.sendMessage(new TextComponent(ChatColor.RED + "That minigame has not been added to the server. To help the server grow, consider making a small donation through our online web-store."));
                 return ServerData.Minigames.INACTIVE;

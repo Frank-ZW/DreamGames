@@ -20,6 +20,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.*;
+import java.util.logging.Level;
 
 public class ServerData implements Runnable {
 
@@ -104,6 +105,7 @@ public class ServerData implements Runnable {
             player.connect(this.server);
         } catch (IOException e) {
             player.sendMessage(new TextComponent(ChatColor.RED + "An error occurred while connecting you to " + this.server.getName() + "."));
+            this.plugin.getLogger().log(Level.SEVERE, "Failed to send " + player.getName() + " to " + this.server.getName(), e);
         }
     }
 
@@ -261,6 +263,7 @@ public class ServerData implements Runnable {
     public enum Minigames {
         MANHUNT("Manhunt"),
         DEATHSWAP("Death Swap"),
+        LOCKOUT("Lock Out"),
         INACTIVE("Unknown");
 
         private final String displayName;
