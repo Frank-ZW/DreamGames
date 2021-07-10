@@ -1,7 +1,7 @@
 package net.craftgalaxy.deathswap.minigame;
 
 import net.craftgalaxy.deathswap.runnable.SwapRunnable;
-import net.craftgalaxy.minigameservice.bukkit.minigame.AbstractSurvivalMinigame;
+import net.craftgalaxy.minigameservice.bukkit.minigame.types.AbstractSurvivalMinigame;
 import net.craftgalaxy.minigameservice.bukkit.util.minecraft.PlayerUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
@@ -11,6 +11,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +27,20 @@ public class DeathSwapMinigame extends AbstractSurvivalMinigame {
 
     public DeathSwapMinigame(int gameKey, Location lobby) {
         super(gameKey, "Death Swap", lobby, false, false);
+    }
+
+    @Override
+    protected boolean onPlayerStartTeleport(@NotNull Player player, @NotNull Location to) {
+        player.getInventory().setHelmet(new ItemStack(Material.CHAINMAIL_HELMET));
+        player.getInventory().setChestplate(new ItemStack(Material.IRON_CHESTPLATE));
+        player.getInventory().setLeggings(new ItemStack(Material.CHAINMAIL_LEGGINGS));
+        player.getInventory().setBoots(new ItemStack(Material.CHAINMAIL_BOOTS));
+        player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+        player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
+        player.getInventory().addItem(new ItemStack(Material.STONE_PICKAXE));
+        player.getInventory().addItem(new ItemStack(Material.STONE_SHOVEL));
+        player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
+        return super.onPlayerStartTeleport(player, to);
     }
 
     @Override
@@ -111,12 +126,17 @@ public class DeathSwapMinigame extends AbstractSurvivalMinigame {
         if (online.size() > 1) {
             Player initial = online.remove(this.random.nextInt(online.size()));
             Location loc = initial.getLocation();
-            do {
-                Player next = online.remove(this.random.nextInt(online.size()));
-                initial.teleport(next == null ? loc : next.getLocation());
+            while (true) {
                 initial.playSound(initial.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.75F, 0.75F);
+                if (online.isEmpty()) {
+                    initial.teleport(loc);
+                    break;
+                }
+
+                Player next = online.remove(this.random.nextInt(online.size()));
+                initial.teleport(next.getLocation());
                 initial = next;
-            } while (!online.isEmpty());
+            }
         }
     }
 

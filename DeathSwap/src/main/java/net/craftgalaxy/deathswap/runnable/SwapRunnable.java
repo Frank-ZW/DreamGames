@@ -17,7 +17,7 @@ public class SwapRunnable extends BukkitRunnable {
 
     public SwapRunnable(DeathSwapMinigame deathSwap) {
         this.deathSwap = deathSwap;
-        this.countdown = 3 * 60;
+        this.countdown = 240;
     }
 
     /**
@@ -43,7 +43,7 @@ public class SwapRunnable extends BukkitRunnable {
 
         if (this.countdown <= 0) {
             this.deathSwap.swapPlayers();
-            this.countdown = 3 * 60;
+            this.countdown = 240;
         } else {
             --this.countdown;
         }
